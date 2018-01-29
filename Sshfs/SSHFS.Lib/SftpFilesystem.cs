@@ -66,7 +66,7 @@ namespace Sshfs
         private int _userId;
         private string _idCommand = "id";
         private string _dfCommand = "df";
-        private HashSet<int> _userGroups;
+        private HashSet<long> _userGroups;
 
         private readonly int _attributeCacheTimeout;
         private readonly int _directoryCacheTimeout;
@@ -107,7 +107,7 @@ namespace Sshfs
 
             _userId = GetUserId();
             if (_userId != -1)
-                _userGroups = new HashSet<int>(GetUserGroupsIds());
+                _userGroups = new HashSet<long>(GetUserGroupsIds());
 
 
             if (String.IsNullOrWhiteSpace(_rootpath))
@@ -262,12 +262,12 @@ namespace Sshfs
                 }
             }
         }
-        private IEnumerable<int> GetUserGroupsIds()
+        private IEnumerable<long> GetUserGroupsIds()
         {
             using (var cmd = _sshClient.CreateCommand(_idCommand + " -G ", Encoding.UTF8))
             {
                 cmd.Execute();
-                return cmd.Result.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Select(Int32.Parse);
+                return cmd.Result.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries).Select(long.Parse);
             }
         }
 
