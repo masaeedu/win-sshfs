@@ -62,6 +62,9 @@
     <PackageReference Include="CommandLineParser">
       <Version>2.2.1</Version>
     </PackageReference>
+    <PackageReference Include="Costura.Fody">
+      <Version>1.6.2</Version>
+    </PackageReference>
     <PackageReference Include="DokanNet">
       <Version>1.1.1</Version>
     </PackageReference>
@@ -71,6 +74,11 @@
     <PackageReference Include="System.ValueTuple">
       <Version>4.3.1</Version>
     </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="FodyWeavers.xml">
+      <SubType>Designer</SubType>
+    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
