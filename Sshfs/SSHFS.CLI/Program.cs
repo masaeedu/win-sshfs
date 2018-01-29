@@ -55,6 +55,12 @@ namespace SSHFS.CLI
             Required = false,
             HelpText = "Path to SSH user's private key(s), if key-based auth should be attempted")]
         public IEnumerable<string> Keys { get; set; }
+
+        // Logging
+        [Option('v', "verbose",
+            Required = false, Default = false,
+            HelpText = "Enable Dokan logging from mounted filesystem")]
+        public bool Logging { get; set; }
     }
 
     class Program
@@ -77,7 +83,7 @@ namespace SSHFS.CLI
                 throw new InvalidOperationException(
                     "Could not connect to server with any known authentication mechanism");
 
-            fs.Mount($"{options.DriveLetter}");
+            fs.Mount($"{options.DriveLetter}", options.Logging ? null : new NullLogger());
         }
 
         static IEnumerable<(string, ConnectionInfo)> GetAuthMechanisms(Options options)
