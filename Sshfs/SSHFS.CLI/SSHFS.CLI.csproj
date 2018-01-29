@@ -7,7 +7,7 @@
     <ProjectGuid>{B592BD5C-D090-444E-9931-5FC45E30B887}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <RootNamespace>SSHFS.CLI</RootNamespace>
-    <AssemblyName>SSHFS.CLI</AssemblyName>
+    <AssemblyName>sshfs</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
