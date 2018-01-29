@@ -11,6 +11,8 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using CommandLine.Text;
+using DokanNet.Logging;
 
 namespace SSHFS.CLI
 {
@@ -21,6 +23,7 @@ namespace SSHFS.CLI
             Required = true,
             HelpText = "Drive letter to mount the remote SFTP path under")]
         public char DriveLetter { get; set; }
+
         [Option('r', "path",
             Required = true,
             HelpText = "Absolute path of directory to be mounted from remote system")]
@@ -31,8 +34,9 @@ namespace SSHFS.CLI
             Required = true,
             HelpText = "IP or hostname of remote host")]
         public string Host { get; set; }
+
         [Option('p', "port",
-            Required = false, DefaultValue = 22,
+            Required = false, Default = 22,
             HelpText = "SSH service port on remote server")]
         public int Port { get; set; }
 
@@ -41,23 +45,28 @@ namespace SSHFS.CLI
             Required = true,
             HelpText = "Name of SSH user on remote system")]
         public string Username { get; set; }
+
         [Option('x', "password",
             Required = false,
-            HelpText = "INSECURE: SSH user's password, if password-based or keyboard-interactive auth should be attempted. Note that the security model for this is equivalent to sshpass's -p option, and exposes your password to any process on the machine that cares to run ps")]
-        public string Password { get; set; }
-        [OptionArray('k', "private-keys",
+            HelpText = "Read password from stdin")]
+        public bool Password { get; set; }
+
+        [Option('k', "private-keys",
             Required = false,
             HelpText = "Path to SSH user's private key(s), if key-based auth should be attempted")]
-        public string[] Keys { get; set; }
+        public IEnumerable<string> Keys { get; set; }
     }
 
     class Program
     {
         static void Main(string[] args)
         {
-            var options = new Options();
-            Parser.Default.ParseArgumentsStrict(args, options);
+            Parser.Default.ParseArguments<Options>(args)
+                .WithParsed(Start);
+        }
 
+        static void Start(Options options)
+        {
             var auths = GetAuthMechanisms(options);
 
             var fs = auths
@@ -65,7 +74,8 @@ namespace SSHFS.CLI
                 .FirstOrDefault(result => result != null);
 
             if (fs == null)
-                throw new InvalidOperationException("Could not connect to server with any known authentication mechanism");
+                throw new InvalidOperationException(
+                    "Could not connect to server with any known authentication mechanism");
 
             fs.Mount($"{options.DriveLetter}");
         }
@@ -76,17 +86,27 @@ namespace SSHFS.CLI
 
             if (options.Keys != null)
             {
-                auths.AddRange(new(string, ConnectionInfo)[] {
+                auths.AddRange(new(string, ConnectionInfo)[]
+                {
                     ("private key", PrivateKeyConnectionInfo(options))
                 });
             }
-
-            if (options.Password != null)
+            else if (options.Password)
             {
-                auths.AddRange(new(string, ConnectionInfo)[] {
-                    ("password", new PasswordConnectionInfo(options.Host, options.Port, options.Username, options.Password)),
-                    ("keyboard-interactive", KeyboardInteractiveConnectionInfo(options))
+                Console.WriteLine("No SSH key file selected, using password auth instead.");
+                var pass = ReadLine.ReadPassword("Please enter password: ");
+
+                auths.AddRange(new(string, ConnectionInfo)[]
+                {
+                    ("password", new PasswordConnectionInfo(options.Host, options.Port, options.Username, pass)),
+                    ("keyboard-interactive", KeyboardInteractiveConnectionInfo(options, pass))
                 });
+            }
+            else
+            {
+                Console.WriteLine(
+                    "No key files specified, and password auth not enabled (win-sshfs does not search for private keys). Aborting...");
+                Environment.Exit(1);
             }
 
             return auths;
@@ -95,18 +115,14 @@ namespace SSHFS.CLI
         static PrivateKeyConnectionInfo PrivateKeyConnectionInfo(Options options)
         {
             var pkFiles = options.Keys.Select(k =>
-            {
-                var match = Regex.Match(k, @"(?<keyfile>\S+)(:?\s+ (?<passphrase>\S+))?");
-                var keyfile = match.Groups["keyfile"];
-                var passphrase = match.Groups["passphrase"];
-
-                return passphrase.Success ? new PrivateKeyFile(keyfile.Value, passphrase.Value) : new PrivateKeyFile(keyfile.Value);
-            });
+                options.Password
+                    ? new PrivateKeyFile(k, ReadLine.ReadPassword($"Enter passphrase for {k}: "))
+                    : new PrivateKeyFile(k));
 
             return new PrivateKeyConnectionInfo(options.Host, options.Port, options.Username, pkFiles.ToArray());
         }
 
-        static KeyboardInteractiveConnectionInfo KeyboardInteractiveConnectionInfo(Options options)
+        static KeyboardInteractiveConnectionInfo KeyboardInteractiveConnectionInfo(Options options, string pass)
         {
             var auth = new KeyboardInteractiveConnectionInfo(options.Host, options.Port, options.Username);
 
@@ -115,7 +131,7 @@ namespace SSHFS.CLI
                 var passPrompts = e.Prompts
                     .Where(p => p.Request.StartsWith("Password:"));
                 foreach (var p in passPrompts)
-                    p.Response = options.Password;
+                    p.Response = pass;
             };
 
             return auth;
@@ -132,7 +148,8 @@ namespace SSHFS.CLI
             }
             catch (SshAuthenticationException)
             {
-                Console.WriteLine($"Failed to authenticate using {authType}, falling back to next auth mechanism if available.");
+                Console.WriteLine(
+                    $"Failed to authenticate using {authType}, falling back to next auth mechanism if available.");
                 return null;
             }
         }
