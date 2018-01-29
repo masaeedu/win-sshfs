@@ -9,7 +9,7 @@ CLI usage is:
 SSHFS 1.0.0.0
 Copyright c  2017
 
-  -d, --drive-letter    Required. Drive letter to mount the remote SFTP path
+  -d, --drive-letter    Required. Drive letter to mount the remote SFTP path 
                         under
 
   -r, --path            Required. Absolute path of directory to be mounted from
@@ -21,11 +21,15 @@ Copyright c  2017
 
   -u, --username        Required. Name of SSH user on remote system
 
-  -x, --password        SSH user's password, if password-based or
-                        keyboard-interactive auth should be attempted
+  -x, --password        Read password from stdin
 
-  -k, --private-keys    SSH user's private key(s), if key-based auth should be
-                        attempted
+  -k, --private-keys    Path to SSH user's private key(s), if key-based auth 
+                        should be attempted
+
+  --help                Display this help screen.
+
+  --version             Display version information.
+
 ```
 
 Builds can be found on the [releases page](https://github.com/masaeedu/win-sshfs/releases/latest)
