@@ -100,7 +100,7 @@ namespace SSHFS.CLI
             else if (options.Password)
             {
                 Console.WriteLine("No SSH key file selected, using password auth instead.");
-                var pass = ReadLine.ReadPassword("Please enter password: ");
+                var pass = ReadPassword("Please enter password: ");
 
                 auths.AddRange(new(string, ConnectionInfo)[]
                 {
@@ -122,10 +122,19 @@ namespace SSHFS.CLI
         {
             var pkFiles = options.Keys.Select(k =>
                 options.Password
-                    ? new PrivateKeyFile(k, ReadLine.ReadPassword($"Enter passphrase for {k}: "))
+                    ? new PrivateKeyFile(k, ReadPassword($"Enter passphrase for {k}: "))
                     : new PrivateKeyFile(k));
 
             return new PrivateKeyConnectionInfo(options.Host, options.Port, options.Username, pkFiles.ToArray());
+        }
+
+        static string ReadPassword(string prompt)
+        {
+            if (!Console.IsInputRedirected)
+                return ReadLine.ReadPassword(prompt);
+
+            Console.WriteLine(prompt);
+            return Console.ReadLine();
         }
 
         static KeyboardInteractiveConnectionInfo KeyboardInteractiveConnectionInfo(Options options, string pass)
