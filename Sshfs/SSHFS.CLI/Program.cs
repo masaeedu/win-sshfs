@@ -90,7 +90,7 @@ namespace SSHFS.CLI
         {
             var auths = new List<(string, ConnectionInfo)>();
 
-            if (options.Keys != null)
+            if (options.Keys != null && options.Keys.Any())
             {
                 auths.AddRange(new(string, ConnectionInfo)[]
                 {
